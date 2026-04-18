@@ -62,9 +62,7 @@
                             resultDiv.innerHTML = "<span style='color:#F59E0B;'>该账号暂未开始上传数据</span>";
                         }
                     } else {
-                        resultDiv.innerHTML = "<span style='color:#EF4444;'>查询失败：" + (data.msg |
-
-| "卡密不存在或过期") + "</span>";
+                        resultDiv.innerHTML = "<span style='color:#EF4444;'>查询失败：" + (data.msg || "卡密不存在或过期") + "</span>";
                     }
                 })
                .catch(error => {
