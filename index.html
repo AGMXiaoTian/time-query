@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>挂机时间云端查询系统</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px 20px; background-color: #f4f6f8; color: #334155; }
+       .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        input { width: 80%; padding: 12px; margin: 10px 0 20px; font-size: 15px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; }
+        button { width: 88%; padding: 12px; background-color: #0EA5E9; color: white; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+        button:hover { background-color: #0284C7; }
+        #result { margin-top: 25px; font-size: 18px; }
+       .time-display { font-size: 32px; font-weight: bold; color: #10B981; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🕒 挂机时间查询</h2>
+        <p style="font-size: 13px; color: #94A3B8;">请输入您的专属卡密以获取最新进度</p>
+        
+        <input type="text" id="kamiInput" placeholder="请输入专属账号/卡密">
+        <button onclick="queryTime()">立即查询</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // 将数字秒数转换为双位数的 HH:MM:SS 格式
+        function formatSeconds(secs) {
+            const h = Math.floor(secs / 3600);
+            const m = Math.floor((secs % 3600) / 60);
+            const s = Math.floor(secs % 60);
+            return (h < 10? "0" + h : h) + ":" + 
+                   (m < 10? "0" + m : m) + ":" + 
+                   (s < 10? "0" + s : s);
+        }
+
+        function queryTime() {
+            const kami = document.getElementById("kamiInput").value.trim();
+            const resultDiv = document.getElementById("result");
+            
+            if (!kami) {
+                resultDiv.innerHTML = "<span style='color:#EF4444;'>卡密不能为空！</span>";
+                return;
+            }
+
+            resultDiv.innerHTML = "<span style='color:#94A3B8;'>努力查询中，请稍候...</span>";
+
+            // 注意：请将 10000 替换为您微验后台真实的 应用 APPID
+            const appId = "10000"; 
+            const url = `http://wy.llua.cn/api/?id=getvalue&app=${appId}&kami=${kami}&value=MatchTime`;
+
+            fetch(url)
+               .then(response => response.json())
+               .then(data => {
+                    if (data.code === 200) {
+                        // 返回的 data.msg 即为保存在服务端的总秒数
+                        const totalSeconds = parseInt(data.msg, 10);
+                        if (!isNaN(totalSeconds)) {
+                            resultDiv.innerHTML = "当前累计已挂机：<div class='time-display'>" + formatSeconds(totalSeconds) + "</div>";
+                        } else {
+                            resultDiv.innerHTML = "<span style='color:#F59E0B;'>该账号暂未开始上传数据</span>";
+                        }
+                    } else {
+                        resultDiv.innerHTML = "<span style='color:#EF4444;'>查询失败：" + (data.msg |
+
+| "卡密不存在或过期") + "</span>";
+                    }
+                })
+               .catch(error => {
+                    resultDiv.innerHTML = "<span style='color:#EF4444;'>网络请求错误。如果持续出现，可能是浏览器的跨域拦截(CORS)导致。</span>";
+                    console.error(error);
+                });
+        }
+    </script>
+</body>
+</html>
