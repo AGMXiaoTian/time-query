@@ -6,12 +6,12 @@
     <title>挂机时间云端查询系统</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px 20px; background-color: #f4f6f8; color: #334155; }
-       .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+      .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         input { width: 80%; padding: 12px; margin: 10px 0 20px; font-size: 15px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; }
         button { width: 88%; padding: 12px; background-color: #0EA5E9; color: white; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; transition: 0.3s; }
         button:hover { background-color: #0284C7; }
         #result { margin-top: 25px; font-size: 18px; }
-       .time-display { font-size: 32px; font-weight: bold; color: #10B981; margin-top: 10px; }
+      .time-display { font-size: 32px; font-weight: bold; color: #10B981; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -31,9 +31,10 @@
             const h = Math.floor(secs / 3600);
             const m = Math.floor((secs % 3600) / 60);
             const s = Math.floor(secs % 60);
-            return (h < 10? "0" + h : h) + ":" + 
-                   (m < 10? "0" + m : m) + ":" + 
-                   (s < 10? "0" + s : s);
+            const hh = h < 10? "0" + h : h;
+            const mm = m < 10? "0" + m : m;
+            const ss = s < 10? "0" + s : s;
+            return hh + ":" + mm + ":" + ss;
         }
 
         function queryTime() {
@@ -47,12 +48,15 @@
 
             resultDiv.innerHTML = "<span style='color:#94A3B8;'>努力查询中，请稍候...</span>";
 
-            const appId = "24429"; 
-            const url = `http://wy.llua.cn/api/?id=getvalue&app=${appId}&kami=${kami}&value=MatchTime`;
+            // 注意：请将 10000 替换为您微验后台真实的 应用 APPID
+            const appId = "10000"; 
+            const url = `https://wy.llua.cn/api/?id=getvalue&app=${appId}&kami=${kami}&value=MatchTime`;
 
             fetch(url)
-               .then(response => response.json())
-               .then(data => {
+             .then(function(response) {
+                  return response.json();
+              })
+             .then(function(data) {
                     if (data.code === 200) {
                         // 返回的 data.msg 即为保存在服务端的总秒数
                         const totalSeconds = parseInt(data.msg, 10);
@@ -62,11 +66,13 @@
                             resultDiv.innerHTML = "<span style='color:#F59E0B;'>该账号暂未开始上传数据</span>";
                         }
                     } else {
-                        resultDiv.innerHTML = "<span style='color:#EF4444;'>查询失败：" + (data.msg || "卡密不存在或过期") + "</span>";
+                        // 彻底弃用引起换行 Bug 的双竖线符号，改用安全的判断逻辑
+                        const errorMsg = data.msg? data.msg : "卡密不存在或过期";
+                        resultDiv.innerHTML = "<span style='color:#EF4444;'>查询失败：" + errorMsg + "</span>";
                     }
                 })
-               .catch(error => {
-                    resultDiv.innerHTML = "<span style='color:#EF4444;'>网络请求错误。如果持续出现，可能是浏览器的跨域拦截(CORS)导致。</span>";
+             .catch(function(error) {
+                    resultDiv.innerHTML = "<span style='color:#EF4444;'>网络请求错误。如果持续出现，说明微验官方服务器拦截了跨域请求(CORS)。</span>";
                     console.error(error);
                 });
         }
