@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>挂机时间云端查询系统</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; padding: 50px 20px; background-color: #f4f6f8; color: #334155; }
       .container { max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -26,7 +27,6 @@
     </div>
 
     <script>
-        // 将数字秒数转换为双位数的 HH:MM:SS 格式
         function formatSeconds(secs) {
             const h = Math.floor(secs / 3600);
             const m = Math.floor((secs % 3600) / 60);
@@ -48,37 +48,53 @@
 
             resultDiv.innerHTML = "<span style='color:#94A3B8;'>努力查询中，请稍候...</span>";
 
+            // 您的核心配置参数
             const appId = "24429"; 
-            // 目标地址：用回原本不支持加密的 http 协议
-            const targetUrl = `http://wy.llua.cn/api/?id=getvalue&app=${appId}&kami=${kami}&value=MatchTime`;
+            const appKey = "ZlLSWr4434ZYQlZ7"; // 提取自您脚本的 AppKey
+            const t = Math.floor(Date.now() / 1000);
+
+            // 生成 MD5 签名 (根据微验通用规则拼接)
+            const signStr = "app=" + appId + "&kami=" + kami + "&t=" + t + "&value=MatchTime&" + appKey;
+            const sign = CryptoJS.MD5(signStr).toString();
+
+            // 原始请求地址（携带了 t 和 sign 参数）
+            const targetUrl = `http://wy.llua.cn/api/?id=getvalue&app=${appId}&kami=${kami}&t=${t}&sign=${sign}&value=MatchTime`;
             
-            // 代理地址：使用 allorigins 公共跨域代理，将不安全的 http 包装成合法的 https 请求
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
+            // 使用另外一个更稳定的跨域代理，且不包裹额外的 JSON
+            const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`;
 
             fetch(proxyUrl)
             .then(function(response) {
-                  return response.json();
+                  return response.text(); // 先按纯文本读取，防止防CC页面导致崩溃
               })
-            .then(function(proxyData) {
-                  // 代理服务抓取到的微验真实返回结果存放在 proxyData.contents 里面，我们需要再解析一次
-                  const data = JSON.parse(proxyData.contents);
+            .then(function(text) {
+                  // 智能拦截：如果服务器返回了防CC的网页代码，直接提示用户
+                  if (text.indexOf("当前为")!== -1 |
+
+| text.indexOf("<html")!== -1) {
+                      resultDiv.innerHTML = "<span style='color:#F59E0B;'>查询失败：触发了微验服务器的防CC限制，请隔几分钟后再试。</span>";
+                      return;
+                  }
+
+                  // 正常解析 JSON
+                  const data = JSON.parse(text);
 
                   if (data.code === 200) {
-                        const totalSeconds = parseInt(data.msg, 10);
-                        if (!isNaN(totalSeconds)) {
-                            resultDiv.innerHTML = "当前累计已挂机：<div class='time-display'>" + formatSeconds(totalSeconds) + "</div>";
-                        } else {
-                            resultDiv.innerHTML = "<span style='color:#F59E0B;'>该账号暂未开始上传数据</span>";
-                        }
+                      const totalSeconds = parseInt(data.msg, 10);
+                      if (!isNaN(totalSeconds)) {
+                          resultDiv.innerHTML = "当前累计已挂机：<div class='time-display'>" + formatSeconds(totalSeconds) + "</div>";
+                      } else {
+                          resultDiv.innerHTML = "<span style='color:#F59E0B;'>该账号暂未开始上传数据</span>";
+                      }
                   } else {
-                        const errorMsg = data.msg? data.msg : "卡密不存在或过期";
-                        resultDiv.innerHTML = "<span style='color:#EF4444;'>查询失败：" + errorMsg + "</span>";
+                      const errorMsg = data.msg? data.msg : "卡密不存在或过期";
+                      resultDiv.innerHTML = "<span style='color:#EF4444;'>查询异常：" + errorMsg + "</span>";
                   }
               })
             .catch(function(error) {
-                    resultDiv.innerHTML = "<span style='color:#EF4444;'>网络请求错误，请稍后重试。</span>";
-                    console.error(error);
-                });
+                  resultDiv.innerHTML = "<span style='color:#EF4444;'>网络请求超时或跨域代理被拦截。</span>";
+                  console.error(error);
+              });
         }
     </script>
 </body>
