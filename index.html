@@ -69,9 +69,7 @@
               })
             .then(function(text) {
                   // 智能拦截：如果服务器返回了防CC的网页代码，直接提示用户
-                  if (text.indexOf("当前为")!== -1 |
-
-| text.indexOf("<html")!== -1) {
+                  if (text.indexOf("当前为")!== -1 || text.indexOf("<html")!== -1) {
                       resultDiv.innerHTML = "<span style='color:#F59E0B;'>查询失败：触发了微验服务器的防CC限制，请隔几分钟后再试。</span>";
                       return;
                   }
