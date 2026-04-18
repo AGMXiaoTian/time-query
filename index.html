@@ -53,8 +53,7 @@
             const appKey = "ZlLSWr4434ZYQlZ7"; // 提取自您脚本的 AppKey
             const t = Math.floor(Date.now() / 1000);
 
-            // 生成 MD5 签名 (根据微验通用规则拼接)
-            const signStr = "app=" + appId + "&kami=" + kami + "&t=" + t + "&value=MatchTime&" + appKey;
+            const signStr = "kami=" + kami + "&t=" + t + "&" + appKey;
             const sign = CryptoJS.MD5(signStr).toString();
 
             // 原始请求地址（携带了 t 和 sign 参数）
